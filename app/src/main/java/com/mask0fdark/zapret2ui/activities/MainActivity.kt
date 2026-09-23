@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -25,9 +26,12 @@ import com.mask0fdark.zapret2ui.data.*
 import com.mask0fdark.zapret2ui.fragments.MainSettingsFragment
 import com.mask0fdark.zapret2ui.databinding.ActivityMainBinding
 import com.mask0fdark.zapret2ui.services.ServiceManager
+import com.mask0fdark.zapret2ui.services.WarpProxyManager
 import com.mask0fdark.zapret2ui.services.appStatus
 import com.mask0fdark.zapret2ui.utility.*
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -150,6 +154,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupStrategySelector()
+        setupTelegramCallRelay()
 
         binding.advancedSettingsButton.setOnClickListener {
             val (status, _) = appStatus
@@ -252,6 +257,92 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    private fun setupTelegramCallRelay() {
+        val preferences = getPreferences()
+        binding.telegramCallRelaySwitch.isChecked =
+            preferences.getBoolean(WarpProxyManager.PREF_ENABLED, false)
+
+        binding.telegramCallRelaySwitch.setOnCheckedChangeListener { button, enabled ->
+            if (enabled && !preferences.getBoolean(WarpProxyManager.PREF_TOS_ACCEPTED, false)) {
+                button.isChecked = false
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.telegram_call_relay_terms_title)
+                    .setMessage(R.string.telegram_call_relay_terms)
+                    .setNegativeButton(R.string.telegram_call_relay_cancel, null)
+                    .setPositiveButton(R.string.telegram_call_relay_accept) { _, _ ->
+                        preferences.edit()
+                            .putBoolean(WarpProxyManager.PREF_TOS_ACCEPTED, true)
+                            .putBoolean(WarpProxyManager.PREF_ENABLED, true)
+                            .apply()
+                        binding.telegramCallRelaySwitch.isChecked = true
+                    }
+                    .show()
+                return@setOnCheckedChangeListener
+            }
+
+            preferences.edit()
+                .putBoolean(WarpProxyManager.PREF_ENABLED, enabled)
+                .putString(WarpProxyManager.PREF_LAST_ERROR, "")
+                .apply()
+
+            updateTelegramCallRelayStatus()
+            restartVpnIfRunning()
+        }
+
+        binding.telegramCallRelayButton.setOnClickListener {
+            try {
+                startActivity(
+                    Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse(
+                            "tg://socks?server=${WarpProxyManager.LISTEN_HOST}" +
+                                "&port=${WarpProxyManager.LISTEN_PORT}"
+                        )
+                    )
+                )
+            } catch (_: Exception) {
+                Toast.makeText(this, R.string.telegram_not_found, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        updateTelegramCallRelayStatus()
+    }
+
+    private fun restartVpnIfRunning() {
+        val (status, mode) = appStatus
+        if (status != AppStatus.Running || mode != Mode.VPN) {
+            return
+        }
+
+        Toast.makeText(this, R.string.relay_restart_hint, Toast.LENGTH_SHORT).show()
+        ServiceManager.stop(this)
+        lifecycleScope.launch {
+            delay(1200)
+            val prepareIntent = VpnService.prepare(this@MainActivity)
+            if (prepareIntent == null) {
+                ServiceManager.start(this@MainActivity, Mode.VPN)
+            } else {
+                vpnRegister.launch(prepareIntent)
+            }
+        }
+    }
+
+    private fun updateTelegramCallRelayStatus() {
+        val preferences = getPreferences()
+        val enabled = preferences.getBoolean(WarpProxyManager.PREF_ENABLED, false)
+        val lastError = preferences.getString(WarpProxyManager.PREF_LAST_ERROR, "").orEmpty()
+        val (status, mode) = appStatus
+
+        binding.telegramCallRelayButton.isEnabled = enabled
+        binding.telegramCallRelayStatus.text = when {
+            !enabled -> getString(R.string.telegram_call_relay_off)
+            lastError.isNotBlank() -> lastError
+            status == AppStatus.Running && mode == Mode.VPN ->
+                getString(R.string.telegram_call_relay_running)
+            else -> getString(R.string.telegram_call_relay_ready)
+        }
+    }
+
     private fun start() {
         when (getPreferences().mode()) {
             Mode.VPN -> {
@@ -280,6 +371,8 @@ class MainActivity : AppCompatActivity() {
         val proxyIp = preferences.getStringNotNull("byedpi_proxy_ip", "127.0.0.1")
         val proxyPort = preferences.getStringNotNull("byedpi_proxy_port", "1080")
         binding.proxyAddress.text = getString(R.string.proxy_address, proxyIp, proxyPort)
+
+        updateTelegramCallRelayStatus()
 
         when (status) {
             AppStatus.Halted -> {

@@ -30,14 +30,55 @@ jobs:
         with:
           packages: platform-tools
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.3"
+
       - name: Install Android toolchain
         run: |
           sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.1.8937393" "cmake;3.22.1"
 
-      - name: Build debug APK
+      - name: Build app native libraries
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew runNdkBuild --no-daemon
+
+      - name: Build WARP relay binaries
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/Diniboy1123/usque.git "$RUNNER_TEMP/usque"
+          cd "$RUNNER_TEMP/usque"
+
+          NDK_BIN="$ANDROID_HOME/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin"
+
+          build_usque() {
+            abi="$1"
+            arch="$2"
+            cc="$3"
+            shift 3
+            mkdir -p "$GITHUB_WORKSPACE/app/src/main/jniLibs/$abi"
+            env GOOS=android GOARCH="$arch" CGO_ENABLED=1 CC="$NDK_BIN/$cc" "$@" \
+              go build -buildmode=pie -trimpath -ldflags="-s -w" \
+              -o "$GITHUB_WORKSPACE/app/src/main/jniLibs/$abi/libusque.so" .
+          }
+
+          build_usque arm64-v8a arm64 aarch64-linux-android21-clang
+          build_usque armeabi-v7a arm armv7a-linux-androideabi21-clang GOARM=7
+          build_usque x86 386 i686-linux-android21-clang
+          build_usque x86_64 amd64 x86_64-linux-android21-clang
+
+          find "$GITHUB_WORKSPACE/app/src/main/jniLibs" -name 'libusque.so' -type f -print -exec file {} \;
+
+      - name: Build debug APK
+        run: |
+          ./gradlew assembleDebug -x runNdkBuild --no-daemon
+
+      - name: Verify WARP relay is packaged
+        shell: bash
+        run: |
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'libusque.so'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

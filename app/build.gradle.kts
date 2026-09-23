@@ -11,8 +11,8 @@ android {
         applicationId = "com.mask0fdark.zapret2ui"
         minSdk = 21
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +54,10 @@ android {
     }
     buildFeatures {
         viewBinding = true
+    }
+
+    packaging {
+        jniLibs.useLegacyPackaging = true
     }
 
     // https://android.izzysoft.de/articles/named/iod-scan-apkchecks?lang=en#blobs

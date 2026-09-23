@@ -90,6 +90,53 @@
             android:alpha="0.7"
             tools:text="Safe default with automatic fallback." />
 
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="18dp"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/telegram_call_relay_switch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/telegram_call_relay_title"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/telegram_call_relay_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:alpha="0.72"
+                    android:text="@string/telegram_call_relay_off" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/telegram_call_relay_button"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/add_to_telegram"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:alpha="0.6"
+                    android:text="@string/telegram_call_relay_hint"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/advanced_settings_button"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
