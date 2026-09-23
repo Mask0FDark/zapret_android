@@ -1,6 +1,6 @@
 <resources>
     <string name="byedpi_docs">https://github.com/hufrea/byedpi/blob/v0.13/README.md</string>
-    <string name="app_name">Zapret2UI Android</string>
+    <string name="app_name">Zapret Android</string>
     <string name="vpn_connect">Connect</string>
     <string name="vpn_disconnect">Disconnect</string>
     <string name="vpn_connected">Connected</string>
@@ -42,8 +42,8 @@
     <string name="failed_to_start">Failed to start %1$s</string>
     <string name="vpn_channel_name">VPN</string>
     <string name="proxy_channel_name">Proxy</string>
-    <string name="notification_title">Zapret2UI Android</string>
-    <string name="vpn_notification_content">VPN is running</string>
+    <string name="notification_title">Zapret Android</string>
+    <string name="vpn_notification_content">DPI bypass is active</string>
     <string name="proxy_notification_content">Proxy is running</string>
     <string name="general_category">General</string>
     <string name="byedpi_category">ByeDPI</string>
@@ -72,7 +72,7 @@
     <string name="desync_https_category">HTTPS</string>
     <string name="byedpi_protocols_category">Protocols</string>
     <string name="byedpi_protocols_hint">Uncheck all to desync all traffic</string>
-    <string name="home_title">Zapret2UI Android</string>
+    <string name="home_title">Zapret Android</string>
     <string name="home_subtitle">Rootless DPI bypass for Android</string>
     <string name="strategy_title">Strategy</string>
     <string name="advanced_settings">Advanced settings</string>

@@ -8,7 +8,8 @@
 - первый публичный Android-релиз;
 - rootless-режим на базе Android VpnService;
 - локальная цепочка TUN → SOCKS5 → ByeDPI;
-- профили Auto, Universal, YouTube, Discord и Telegram;
+- профили Combo, Auto, Universal, YouTube, Discord и Telegram;
+- безопасный always-on профиль Combo: целевые домены Discord/YouTube, UDP-диапазоны Discord voice, известные подсети Telegram и fallback только после признаков блокировки;
 - UDP-desync в голосовых профилях;
 - простой главный экран и отдельные расширенные настройки;
 - Quick Settings tile;
@@ -16,5 +17,5 @@
 
 ### Изменено
 - отдельный package id `com.mask0fdark.zapret2ui`;
-- интерфейс и название адаптированы под Zapret2UI Android;
+- интерфейс и название адаптированы под Zapret Android;
 - сохранены расширенные параметры и режим локального прокси из базового Android-проекта.
