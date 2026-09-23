@@ -6,9 +6,6 @@ private const val DISCORD_HOSTS =
     "discord.com discord.gg discordapp.com discordapp.net discordcdn.com discord.media discordstatus.com"
 private const val YOUTUBE_HOSTS =
     "youtube.com youtu.be googlevideo.com ytimg.com youtubei.googleapis.com youtube.googleapis.com"
-private const val TELEGRAM_IPS =
-    "91.108.0.0/16 149.154.160.0/20 91.105.192.0/23 185.76.151.0/24"
-
 private const val SAFE_FALLBACK =
     "--auto=torst,ssl_err --timeout 3 --proto=t,h --disorder 1 --tlsrec 1+s"
 
@@ -16,8 +13,8 @@ private const val DISCORD_VOICE =
     "--auto=none --proto=u --pf 19294-19344 --udp-fake 6 " +
     "--auto=none --proto=u --pf 50000-65535 --udp-fake 6"
 
-private const val TELEGRAM_DIRECT =
-    "--auto=none --ipset \":$TELEGRAM_IPS\" --disorder 1 --udp-fake 8"
+private const val TELEGRAM_GENERIC =
+    "--proto=u --udp-fake 8 --auto=none --proto=t --disorder 1 --tlsrec 1+s"
 
 enum class StrategyPreset(
     val title: String,
@@ -29,7 +26,6 @@ enum class StrategyPreset(
         "Always-on mode: Discord, YouTube and voice traffic, with a safe fallback for other blocked HTTPS connections.",
         "--proto=t,h --hosts \":$DISCORD_HOSTS $YOUTUBE_HOSTS\" --disorder 1 --tlsrec 1+s " +
             DISCORD_VOICE + " " +
-            TELEGRAM_DIRECT + " " +
             SAFE_FALLBACK
     ),
     AUTO(
@@ -55,8 +51,8 @@ enum class StrategyPreset(
     ),
     TELEGRAM(
         "Telegram",
-        "Attempts desync for known Telegram IPv4 ranges, including UDP. Full IP blocking may still require a relay.",
-        "--ipset \":$TELEGRAM_IPS\" --disorder 1 --udp-fake 8"
+        "Generic Telegram-oriented TCP/UDP desync. For reliable calls or IP-level blocking, enable Telegram calls relay.",
+        TELEGRAM_GENERIC
     );
 
     fun applyTo(preferences: SharedPreferences) {

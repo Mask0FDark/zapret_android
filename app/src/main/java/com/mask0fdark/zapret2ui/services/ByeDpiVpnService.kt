@@ -35,6 +35,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
         private val TAG: String = ByeDpiVpnService::class.java.simpleName
         private const val FOREGROUND_SERVICE_ID: Int = 1
         private const val NOTIFICATION_CHANNEL_ID: String = "ByeDPIVpn"
+        const val PREF_LAST_ERROR: String = "vpn_last_error"
 
         private var status: ServiceStatus = ServiceStatus.Disconnected
     }
@@ -76,6 +77,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
 
     private suspend fun start() {
         Log.i(TAG, "Starting")
+        getPreferences().edit().putString(PREF_LAST_ERROR, "").apply()
 
         if (status == ServiceStatus.Connected) {
             Log.w(TAG, "VPN already connected")
@@ -90,7 +92,9 @@ class ByeDpiVpnService : LifecycleVpnService() {
             }
             updateStatus(ServiceStatus.Connected)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start VPN", e)
+            val message = "${e.javaClass.simpleName}: ${e.message ?: "unknown error"}"
+            Log.e(TAG, "Failed to start VPN: $message", e)
+            getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
             updateStatus(ServiceStatus.Failed)
             stop()
         }
@@ -144,7 +148,9 @@ class ByeDpiVpnService : LifecycleVpnService() {
 
             withContext(Dispatchers.Main) {
                 if (code != 0) {
-                    Log.e(TAG, "Proxy stopped with code $code")
+                    val message = "ByeDPI engine exited with code $code"
+                    Log.e(TAG, message)
+                    getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
                     updateStatus(ServiceStatus.Failed)
                 } else {
                     if (!stopping) {

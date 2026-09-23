@@ -25,6 +25,7 @@ import com.mask0fdark.zapret2ui.R
 import com.mask0fdark.zapret2ui.data.*
 import com.mask0fdark.zapret2ui.fragments.MainSettingsFragment
 import com.mask0fdark.zapret2ui.databinding.ActivityMainBinding
+import com.mask0fdark.zapret2ui.services.ByeDpiVpnService
 import com.mask0fdark.zapret2ui.services.ServiceManager
 import com.mask0fdark.zapret2ui.services.WarpProxyManager
 import com.mask0fdark.zapret2ui.services.appStatus
@@ -113,11 +114,15 @@ class MainActivity : AppCompatActivity() {
                 STOPPED_BROADCAST -> updateStatus()
 
                 FAILED_BROADCAST -> {
-                    Toast.makeText(
-                        context,
-                        getString(R.string.failed_to_start, sender.name),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    val error = getPreferences()
+                        .getString(ByeDpiVpnService.PREF_LAST_ERROR, "")
+                        .orEmpty()
+                    val message = if (error.isBlank()) {
+                        getString(R.string.failed_to_start, sender.name)
+                    } else {
+                        "VPN failed: $error"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     updateStatus()
                 }
 
