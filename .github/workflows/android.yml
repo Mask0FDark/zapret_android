@@ -59,9 +59,5 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Upload unsigned release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Zapret-Android-release-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
-          if-no-files-found: error
+      # Release APK is intentionally not uploaded here because it is unsigned.
+      # Installable preview/release APKs are signed separately with the persistent release key.
