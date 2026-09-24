@@ -76,17 +76,17 @@
     <string name="home_subtitle">Rootless DPI bypass for Android</string>
     <string name="strategy_title">Strategy</string>
     <string name="advanced_settings">Advanced settings</string>
-    <string name="telegram_call_relay_title">Telegram calls relay</string>
+    <string name="telegram_call_relay_title">Telegram proxy</string>
     <string name="telegram_call_relay_off">Off</string>
-    <string name="telegram_call_relay_ready">127.0.0.1:1081 · starts with bypass</string>
-    <string name="telegram_call_relay_running">127.0.0.1:1081 · relay is enabled</string>
-    <string name="telegram_call_relay_hint">Uses a local SOCKS5 relay through Cloudflare WARP. In Telegram enable “Use proxy for calls”.</string>
-    <string name="telegram_call_relay_terms_title">Enable Telegram calls relay?</string>
-    <string name="telegram_call_relay_terms">The relay uses Cloudflare WARP/MASQUE. Continuing registers a WARP device and accepts Cloudflare’s service terms for this connection.</string>
+    <string name="telegram_call_relay_ready">127.0.0.1:1443 · starts with bypass</string>
+    <string name="telegram_call_relay_running">127.0.0.1:1443 · MTProto/WS proxy is enabled</string>
+    <string name="telegram_call_relay_hint">Local MTProto → WebSocket proxy with Cloudflare fronts. Keeps Telegram separate from the DPI profile.</string>
+    <string name="telegram_call_relay_terms_title">Enable Telegram proxy?</string>
+    <string name="telegram_call_relay_terms">Starts the local Telegram MTProto/WebSocket proxy.</string>
     <string name="telegram_call_relay_accept">Enable</string>
     <string name="telegram_call_relay_cancel">Cancel</string>
-    <string name="add_to_telegram">Add SOCKS5 to Telegram</string>
+    <string name="add_to_telegram">Add MTProto to Telegram</string>
     <string name="telegram_not_found">Telegram could not be opened</string>
-    <string name="relay_restart_hint">Restarting bypass to apply relay setting…</string>
+    <string name="relay_restart_hint">Restarting bypass to apply Telegram proxy setting…</string>
     <string name="local_vpn_note">Android shows a VPN icon because VpnService is used to process packets locally. DPI mode does not use a remote VPN server and does not hide your IP address.</string>
 </resources>

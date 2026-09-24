@@ -4,3 +4,6 @@
 [submodule "byedpi"]
 	path = app/src/main/cpp/byedpi
 	url = https://github.com/hufrea/byedpi.git
+[submodule "third_party/tg-ws-proxy-android"]
+	path = third_party/tg-ws-proxy-android
+	url = https://github.com/amurcanov/tg-ws-proxy-android.git

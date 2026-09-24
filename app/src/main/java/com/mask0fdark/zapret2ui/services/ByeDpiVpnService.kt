@@ -27,7 +27,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
     private val byeDpiProxy = ByeDpiProxy()
     private var proxyJob: Job? = null
     private var tunFd: ParcelFileDescriptor? = null
-    private var warpProxyManager: WarpProxyManager? = null
+    private var telegramProxyManager: TelegramProxyManager? = null
     private val mutex = Mutex()
     private var stopping: Boolean = false
 
@@ -87,7 +87,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
         try {
             mutex.withLock {
                 startProxy()
-                startWarpRelayIfEnabled()
+                startTelegramProxyIfEnabled()
                 startTun2Socks()
             }
             updateStatus(ServiceStatus.Connected)
@@ -120,7 +120,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
             stopping = true
             try {
                 stopTun2Socks()
-                stopWarpRelay()
+                stopTelegramProxy()
                 stopProxy()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to stop VPN", e)
@@ -179,35 +179,34 @@ class ByeDpiVpnService : LifecycleVpnService() {
         Log.i(TAG, "Proxy stopped")
     }
 
-    private suspend fun startWarpRelayIfEnabled() {
+    private suspend fun startTelegramProxyIfEnabled() {
         val preferences = getPreferences()
-        val enabled = preferences.getBoolean(WarpProxyManager.PREF_ENABLED, false)
-        val accepted = preferences.getBoolean(WarpProxyManager.PREF_TOS_ACCEPTED, false)
-        if (!enabled || !accepted) {
+        val enabled = preferences.getBoolean(TelegramProxyManager.PREF_ENABLED, false)
+        if (!enabled) {
             return
         }
 
         val upstreamPort = preferences.getString("byedpi_proxy_port", null)?.toIntOrNull() ?: 1080
-        val manager = WarpProxyManager(this)
-        warpProxyManager = manager
+        val manager = TelegramProxyManager(this)
+        telegramProxyManager = manager
 
         val started = manager.start(upstreamPort)
         preferences.edit()
             .putString(
-                WarpProxyManager.PREF_LAST_ERROR,
-                if (started) "" else "Could not start Telegram calls relay"
+                TelegramProxyManager.PREF_LAST_ERROR,
+                if (started) "" else "Could not start Telegram MTProto/WS proxy"
             )
             .apply()
 
         if (!started) {
             manager.stop()
-            warpProxyManager = null
+            telegramProxyManager = null
         }
     }
 
-    private fun stopWarpRelay() {
-        warpProxyManager?.stop()
-        warpProxyManager = null
+    private fun stopTelegramProxy() {
+        telegramProxyManager?.stop()
+        telegramProxyManager = null
     }
 
     private fun startTun2Socks() {

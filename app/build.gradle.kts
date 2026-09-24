@@ -11,8 +11,8 @@ android {
         applicationId = "com.mask0fdark.zapret2ui"
         minSdk = 21
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -78,6 +78,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
@@ -102,6 +103,13 @@ tasks.register<Exec>("runNdkBuild") {
     println("Command: $commandLine")
 }
 
+tasks.register<Copy>("prepareTelegramProxyLibs") {
+    from(rootProject.file("third_party/tg-ws-proxy-android/app/src/main/jniLibs"))
+    into(file("src/main/jniLibs"))
+    include("arm64-v8a/libtgwsproxy.so", "armeabi-v7a/libtgwsproxy.so")
+}
+
 tasks.preBuild {
     dependsOn("runNdkBuild")
+    dependsOn("prepareTelegramProxyLibs")
 }

@@ -99,12 +99,11 @@ TUN → SOCKS5-стек и применяет DPI-desync прямо на уст�
 
 | Профиль | Для чего |
 |---|---|
-| **Combo (recommended)** | постоянный режим: Discord + YouTube + голос, Telegram по известным подсетям и безопасный fallback для остальных HTTPS-соединений |
+| **Combo (recommended)** | постоянный режим: Discord + YouTube + голос и безопасный fallback для остальных HTTPS-соединений |
 | **Auto** | вмешивается в обычный HTTPS только после reset/timeout/TLS-ошибки |
 | **Universal** | общий TCP-desync для HTTPS; агрессивнее Auto |
 | **YouTube** | воздействует только на домены YouTube/Google Video |
 | **Discord** | домены Discord + отдельная обработка UDP-диапазонов голосовых серверов |
-| **Telegram** | TCP/UDP desync для известных IPv4-подсетей Telegram; не заменяет relay при полном IP-блоке |
 
 **Combo** сделан именно для режима «включил и оставил»: обычный HTTPS не должен без причины получать
 desync. Для сторонних сайтов fallback включается только после признаков блокировки — reset, timeout или
@@ -115,21 +114,22 @@ desync. Для сторонних сайтов fallback включается т�
 
 ---
 
-## Telegram и звонки
+## Telegram
 
-С Telegram ситуация сложнее, чем с обычным HTTPS-сайтом. Ограничение может применяться не только по
-DPI, но и по IP-адресам Telegram.
+Telegram вынесен из DPI-профилей отдельно. Причина простая: его могут блокировать по IP, и тогда
+попытка «лечить Telegram desync-ом» одновременно с Discord/YouTube только делает общий профиль менее
+стабильным.
 
-Профиль **Telegram** применяет TCP/UDP desync к известным подсетям Telegram.
+При включении **Telegram proxy** приложение поднимает локальный MTProto-прокси на
+`127.0.0.1:1443`. Дальше соединения Telegram уходят через WebSocket/TLS и Cloudflare-fronted
+домены. После запуска нажмите **Add MTProto to Telegram** и подтвердите добавление прокси в Telegram.
 
-Для блокировки самих IP в приложении есть отдельный **Telegram calls relay**. Он поднимает локальный
-SOCKS5 на `127.0.0.1:1081` через Cloudflare WARP/MASQUE. Само соединение к Cloudflare идёт через
-локальный ByeDPI-прокси, поэтому relay не требует отдельного платного VPN.
+DPI-обход и Telegram-прокси работают независимо: **Combo** продолжает обслуживать Discord/YouTube,
+а Telegram использует свой локальный MTProto → WebSocket путь.
 
-После включения relay нажмите **Add SOCKS5 to Telegram**, затем в Telegram включите
-**Use proxy for calls**. На Android Telegram поддерживает проксирование звонков через SOCKS5.
-
-Обычный DPI-режим и WARP relay разделены: WARP нужен только там, где одного desync недостаточно.
+Нативный Telegram-прокси основан на
+[amurcanov/tg-ws-proxy-android](https://github.com/amurcanov/tg-ws-proxy-android),
+который в свою очередь основан на проекте Flowseal.
 
 ---
 

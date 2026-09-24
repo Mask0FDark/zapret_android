@@ -13,9 +13,6 @@ private const val DISCORD_VOICE =
     "--auto=none --proto=u --pf 19294-19344 --udp-fake 6 " +
     "--auto=none --proto=u --pf 50000-65535 --udp-fake 6"
 
-private const val TELEGRAM_GENERIC =
-    "--proto=u --udp-fake 8 --auto=none --proto=t --disorder 1 --tlsrec 1+s"
-
 enum class StrategyPreset(
     val title: String,
     val description: String,
@@ -48,11 +45,6 @@ enum class StrategyPreset(
         "Targets Discord TLS plus the common UDP voice ranges.",
         "--proto=t,h --hosts \":$DISCORD_HOSTS\" --disorder 1 --tlsrec 1+s " +
             DISCORD_VOICE
-    ),
-    TELEGRAM(
-        "Telegram",
-        "Generic Telegram-oriented TCP/UDP desync. For reliable calls or IP-level blocking, enable Telegram calls relay.",
-        TELEGRAM_GENERIC
     );
 
     fun applyTo(preferences: SharedPreferences) {
