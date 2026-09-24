@@ -2,6 +2,7 @@ package com.mask0fdark.zapret2ui.activities
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.res.ColorStateList
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -135,6 +136,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setSupportActionBar(binding.topAppBar)
 
         val intentFilter = IntentFilter().apply {
             addAction(STARTED_BROADCAST)
@@ -361,6 +363,17 @@ class MainActivity : AppCompatActivity() {
 
         when (status) {
             AppStatus.Halted -> {
+                binding.statusDot.backgroundTintList =
+                    ColorStateList.valueOf(ContextCompat.getColor(this, R.color.status_off))
+                binding.statusText.setTextColor(
+                    ContextCompat.getColor(this, R.color.app_text_primary)
+                )
+                binding.statusButton.backgroundTintList =
+                    ColorStateList.valueOf(ContextCompat.getColor(this, R.color.brand))
+                binding.statusButton.setTextColor(
+                    ContextCompat.getColor(this, R.color.white)
+                )
+
                 when (preferences.mode()) {
                     Mode.VPN -> {
                         binding.statusText.setText(R.string.vpn_disconnected)
@@ -376,6 +389,17 @@ class MainActivity : AppCompatActivity() {
             }
 
             AppStatus.Running -> {
+                binding.statusDot.backgroundTintList =
+                    ColorStateList.valueOf(ContextCompat.getColor(this, R.color.status_on))
+                binding.statusText.setTextColor(
+                    ContextCompat.getColor(this, R.color.status_on)
+                )
+                binding.statusButton.backgroundTintList =
+                    ColorStateList.valueOf(ContextCompat.getColor(this, R.color.status_error))
+                binding.statusButton.setTextColor(
+                    ContextCompat.getColor(this, R.color.white)
+                )
+
                 when (mode) {
                     Mode.VPN -> {
                         binding.statusText.setText(R.string.vpn_connected)

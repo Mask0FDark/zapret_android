@@ -73,8 +73,11 @@
     <string name="byedpi_protocols_category">Protocols</string>
     <string name="byedpi_protocols_hint">Uncheck all to desync all traffic</string>
     <string name="home_title">Zapret Android</string>
-    <string name="home_subtitle">Rootless DPI bypass for Android</string>
+    <string name="home_subtitle">Local DPI bypass · no root · no remote VPN</string>
+    <string name="status_section_label">DPI BYPASS</string>
+    <string name="supported_services_title">Protected services</string>
     <string name="strategy_title">Strategy</string>
+    <string name="strategy_subtitle">Choose how aggressively traffic should be processed</string>
     <string name="advanced_settings">Advanced settings</string>
     <string name="telegram_call_relay_title">Telegram proxy</string>
     <string name="telegram_call_relay_off">Off</string>
