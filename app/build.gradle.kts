@@ -16,16 +16,16 @@ android {
         applicationId = "com.mask0fdark.zapret2ui"
         minSdk = 21
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.3.2-gui2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
+            // tg-ws-proxy currently ships Android binaries for ARM only.
+            // Do not advertise x86 builds that would lose Telegram proxy support at runtime.
             abiFilters.add("armeabi-v7a")
             abiFilters.add("arm64-v8a")
-            abiFilters.add("x86")
-            abiFilters.add("x86_64")
         }
     }
 

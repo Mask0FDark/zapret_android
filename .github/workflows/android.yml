@@ -43,14 +43,29 @@ jobs:
         run: |
           ./gradlew assembleDebug -x runNdkBuild --no-daemon
 
-      - name: Verify Telegram WS proxy is packaged
+      - name: Verify required native libraries in debug APK
         shell: bash
         run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'libtgwsproxy.so'
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            for lib in libbyedpi.so libhev-socks5-tunnel.so libtgwsproxy.so; do
+              unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q "lib/$abi/$lib"
+            done
+          done
 
       - name: Build unsigned release APK
         run: |
           ./gradlew assembleRelease -x runNdkBuild --no-daemon
+
+      - name: Verify required native libraries in release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            for lib in libbyedpi.so libhev-socks5-tunnel.so libtgwsproxy.so; do
+              unzip -l app/build/outputs/apk/release/app-release-unsigned.apk | grep -q "lib/$abi/$lib"
+            done
+          done
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -59,5 +74,12 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      # Release APK is intentionally not uploaded here because it is unsigned.
-      # Installable preview/release APKs are signed separately with the persistent release key.
+      - name: Upload internal unsigned release APK for feature-branch testing
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: INTERNAL-unsigned-release-do-not-install
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+
+      # Public installable APKs are signed separately with the persistent release key.

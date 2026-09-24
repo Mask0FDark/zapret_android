@@ -29,7 +29,9 @@ class ByeDpiVpnService : LifecycleVpnService() {
     private var tunFd: ParcelFileDescriptor? = null
     private var telegramProxyManager: TelegramProxyManager? = null
     private val mutex = Mutex()
+    private var starting: Boolean = false
     private var stopping: Boolean = false
+    private var tun2SocksStarted: Boolean = false
 
     companion object {
         private val TAG: String = ByeDpiVpnService::class.java.simpleName
@@ -79,24 +81,27 @@ class ByeDpiVpnService : LifecycleVpnService() {
         Log.i(TAG, "Starting")
         getPreferences().edit().putString(PREF_LAST_ERROR, "").apply()
 
-        if (status == ServiceStatus.Connected) {
-            Log.w(TAG, "VPN already connected")
-            return
-        }
+        mutex.withLock {
+            if (status == ServiceStatus.Connected || starting || stopping) {
+                Log.w(TAG, "Ignoring duplicate VPN start: status=$status starting=$starting stopping=$stopping")
+                return@withLock
+            }
 
-        try {
-            mutex.withLock {
+            starting = true
+            try {
                 startProxy()
                 startTelegramProxyIfEnabled()
                 startTun2Socks()
+                updateStatus(ServiceStatus.Connected)
+            } catch (t: Throwable) {
+                val message = "${t.javaClass.simpleName}: ${t.message ?: "unknown error"}"
+                Log.e(TAG, "Failed to start VPN: $message", t)
+                getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
+                updateStatus(ServiceStatus.Failed)
+                stopLocked()
+            } finally {
+                starting = false
             }
-            updateStatus(ServiceStatus.Connected)
-        } catch (e: Exception) {
-            val message = "${e.javaClass.simpleName}: ${e.message ?: "unknown error"}"
-            Log.e(TAG, "Failed to start VPN: $message", e)
-            getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
-            updateStatus(ServiceStatus.Failed)
-            stop()
         }
     }
 
@@ -115,22 +120,29 @@ class ByeDpiVpnService : LifecycleVpnService() {
 
     private suspend fun stop() {
         Log.i(TAG, "Stopping")
-
         mutex.withLock {
-            stopping = true
-            try {
-                stopTun2Socks()
-                stopTelegramProxy()
-                stopProxy()
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to stop VPN", e)
-            } finally {
-                stopping = false
-            }
+            stopLocked()
+        }
+    }
+
+    private suspend fun stopLocked() {
+        if (stopping) {
+            Log.w(TAG, "VPN stop already in progress")
+            return
         }
 
-        updateStatus(ServiceStatus.Disconnected)
-        stopSelf()
+        stopping = true
+        try {
+            stopTun2Socks()
+            stopTelegramProxy()
+            stopProxy()
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to stop VPN cleanly", t)
+        } finally {
+            stopping = false
+            updateStatus(ServiceStatus.Disconnected)
+            stopSelf()
+        }
     }
 
     private suspend fun startProxy() {
@@ -147,16 +159,19 @@ class ByeDpiVpnService : LifecycleVpnService() {
             val code = byeDpiProxy.startProxy(preferences)
 
             withContext(Dispatchers.Main) {
-                if (code != 0) {
-                    val message = "ByeDPI engine exited with code $code"
-                    Log.e(TAG, message)
-                    getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
-                    updateStatus(ServiceStatus.Failed)
-                } else {
-                    if (!stopping) {
-                        stop()
-                        updateStatus(ServiceStatus.Disconnected)
+                if (!stopping) {
+                    if (code != 0) {
+                        val message = "ByeDPI engine exited with code $code"
+                        Log.e(TAG, message)
+                        getPreferences().edit().putString(PREF_LAST_ERROR, message).apply()
+                        updateStatus(ServiceStatus.Failed)
+                    } else {
+                        Log.w(TAG, "ByeDPI engine stopped unexpectedly")
                     }
+
+                    // Schedule cleanup from a different coroutine. Calling stop() from proxyJob
+                    // itself would make stopProxy() wait for the current job and deadlock.
+                    lifecycleScope.launch { stop() }
                 }
             }
         }
@@ -167,15 +182,20 @@ class ByeDpiVpnService : LifecycleVpnService() {
     private suspend fun stopProxy() {
         Log.i(TAG, "Stopping proxy")
 
-        if (status == ServiceStatus.Disconnected) {
-            Log.w(TAG, "Proxy already disconnected")
+        val job = proxyJob
+        if (job == null) {
+            Log.w(TAG, "Proxy already stopped")
             return
         }
 
-        byeDpiProxy.stopProxy()
-        proxyJob?.join() ?: throw IllegalStateException("ProxyJob field null")
-        proxyJob = null
+        try {
+            byeDpiProxy.stopProxy()
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "ByeDPI proxy socket was already closed", e)
+        }
 
+        job.join()
+        proxyJob = null
         Log.i(TAG, "Proxy stopped")
     }
 
@@ -245,24 +265,45 @@ class ByeDpiVpnService : LifecycleVpnService() {
 
         this.tunFd = fd
 
-        TProxyService.TProxyStartService(configPath.absolutePath, fd.fd)
-
-        Log.i(TAG, "Tun2Socks started")
+        try {
+            TProxyService.TProxyStartService(configPath.absolutePath, fd.fd)
+            tun2SocksStarted = true
+            Log.i(TAG, "Tun2Socks started")
+        } catch (t: Throwable) {
+            tunFd?.close()
+            tunFd = null
+            tun2SocksStarted = false
+            throw t
+        }
     }
 
     private fun stopTun2Socks() {
         Log.i(TAG, "Stopping tun2socks")
 
-        TProxyService.TProxyStopService()
-
-        try {
-            File(cacheDir, "config.tmp").delete()
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to delete config file", e)
+        if (tun2SocksStarted) {
+            try {
+                TProxyService.TProxyStopService()
+            } catch (t: Throwable) {
+                Log.e(TAG, "Failed to stop tun2socks", t)
+            } finally {
+                tun2SocksStarted = false
+            }
         }
 
-        tunFd?.close() ?: Log.w(TAG, "VPN not running")
-        tunFd = null
+        try {
+            cacheDir.listFiles { file -> file.name.startsWith("config") && file.name.endsWith("tmp") }
+                ?.forEach { it.delete() }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to delete temporary tun2socks config", e)
+        }
+
+        try {
+            tunFd?.close()
+        } catch (t: Throwable) {
+            Log.w(TAG, "Failed to close VPN file descriptor", t)
+        } finally {
+            tunFd = null
+        }
 
         Log.i(TAG, "Tun2socks stopped")
     }
@@ -280,10 +321,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
                 ServiceStatus.Connected -> AppStatus.Running
 
                 ServiceStatus.Disconnected,
-                ServiceStatus.Failed -> {
-                    proxyJob = null
-                    AppStatus.Halted
-                }
+                ServiceStatus.Failed -> AppStatus.Halted
             },
             Mode.VPN
         )
